@@ -9,7 +9,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+// ...existing code...
+app.use(cors({
+  origin: '*', // <-- Allow all origins for ngrok testing
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+// ...existing code...
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

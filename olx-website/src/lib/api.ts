@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://44c5d637639e.ngrok-free.app';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -14,6 +14,7 @@ class ApiClient {
     this.baseURL = baseURL;
   }
 
+// ...existing code...
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -28,7 +29,14 @@ class ApiClient {
         ...options,
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data: any = null;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text(); // fallback for HTML or other responses
+      }
 
       if (!response.ok) {
         return {
@@ -48,7 +56,7 @@ class ApiClient {
       } as ApiResponse<T>;
     }
   }
-
+// ...existing code...
   // Health check
   async healthCheck(): Promise<ApiResponse> {
     return this.request('/api/health');

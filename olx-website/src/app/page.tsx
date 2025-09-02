@@ -42,23 +42,35 @@ export default function HomePage() {
   ];
 
   const [recentAds, setRecentAds] = useState<ApiAd[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAds = async () => {
       try {
-        // Connect to backend API
-        const response = await fetch('http://localhost:5000/api/ads?limit=8');
+        setIsLoading(true);
+        setError(null);
+        
+        // Try to connect to backend API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        const response = await fetch('http://localhost:5000/api/ads?limit=8', {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
         
         // Check if response is ok and content type is JSON
         if (!response.ok) {
           console.error('Failed to fetch ads:', response.status, response.statusText);
-          return;
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           console.error('Response is not JSON:', contentType);
-          return;
+          throw new Error('Response is not JSON');
         }
         
         const data = await response.json();
@@ -72,11 +84,54 @@ export default function HomePage() {
             category: ad.category,
           }));
           setRecentAds(mapped);
+          console.log('✅ Successfully loaded ads from backend');
+          return;
+        } else {
+          throw new Error('Invalid response format');
         }
       } catch (e) {
-        console.error('Error loading ads:', e);
-        // Fallback to empty array if backend is not available
-        setRecentAds([]);
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred';
+        console.log('⚠️ Backend not accessible, using mock data:', errorMessage);
+        setError('Backend server not accessible. Showing sample data.');
+        
+        // Fallback to mock data if backend is not available
+        const fallbackAds: ApiAd[] = [
+          {
+            id: '1',
+            title: 'iPhone 14 Pro Max',
+            price: '₹85,000',
+            location: 'Mumbai, Maharashtra',
+            images: ['https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&h=200&fit=crop'],
+            category: 'mobiles',
+          },
+          {
+            id: '2',
+            title: 'Toyota Camry 2020',
+            price: '₹25,00,000',
+            location: 'Delhi, India',
+            images: ['https://images.unsplash.com/photo-1549924231-f129b911e442?w=300&h=200&fit=crop'],
+            category: 'cars',
+          },
+          {
+            id: '3',
+            title: 'MacBook Pro M2',
+            price: '₹1,50,000',
+            location: 'Bangalore, Karnataka',
+            images: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&h=200&fit=crop'],
+            category: 'electronics',
+          },
+          {
+            id: '4',
+            title: 'PS5 Gaming Console',
+            price: '₹45,000',
+            location: 'Chennai, Tamil Nadu',
+            images: ['https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=300&h=200&fit=crop'],
+            category: 'gaming',
+          }
+        ];
+        setRecentAds(fallbackAds);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadAds();
@@ -156,7 +211,13 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recentAds.length === 0 && (
+            {isLoading && (
+              <div className="col-span-full text-center text-gray-500">Loading ads...</div>
+            )}
+            {error && (
+              <div className="col-span-full text-center text-red-500">{error}</div>
+            )}
+            {recentAds.length === 0 && !isLoading && !error && (
               <div className="col-span-full text-center text-gray-500">No ads yet. Be the first to post!</div>
             )}
             {recentAds.map((ad) => (

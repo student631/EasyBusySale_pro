@@ -17,7 +17,7 @@ class User {
     `;
     
     try {
-      await pool.query(query);
+      const result = await pool.query(query);
       console.log('Users table created successfully');
     } catch (error) {
       console.error('Error creating users table:', error);

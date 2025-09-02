@@ -23,7 +23,7 @@ class Advertisement {
     `;
     
     try {
-      await pool.query(query);
+      const result = await pool.query(query);
       console.log('Advertisements table created successfully');
     } catch (error) {
       console.error('Error creating advertisements table:', error);
