@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/run-slug-migration.js:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"Initial commit: EasyBuy frontend with Next.js $(cat <<''EOF''\n\n- Modern Next.js application with TypeScript\n- Features: Ad posting, search, messaging, notifications, favorites\n- Real-time messaging with WebSocket support\n- SEO optimization and responsive design\n- User authentication and profile management\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git remote:*)",
+      "Bash(git commit -m \"Initial commit: EasyBuy backend with Node.js $(cat <<''EOF''\n\n- Express.js REST API with SQLite database\n- Features: Authentication, ads management, messaging, notifications\n- WebSocket support for real-time messaging\n- Image upload handling\n- JWT-based authentication\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

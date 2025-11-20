@@ -1,0 +1,35 @@
+# EasyBuySale Robots.txt
+# Allow all crawlers to access the site
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://easybuysale.com/sitemap.xml
+
+# Disallow sensitive pages
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /my-ads/
+Disallow: /messages/
+Disallow: /favorites/
+Disallow: /notifications/
+
+# Crawl-delay for all bots (optional - helps prevent server overload)
+Crawl-delay: 1
+
+# Google-specific settings
+User-agent: Googlebot
+Allow: /
+
+# Bing-specific settings
+User-agent: Bingbot
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /

@@ -1,5 +1,7 @@
 'use client';
 
+import { getImageProps } from '@/lib/imageUtils';
+
 interface AdImageProps {
   ad: {
     title: string;
@@ -9,17 +11,22 @@ interface AdImageProps {
 }
 
 export default function AdImage({ ad }: AdImageProps) {
+  const imageProps = getImageProps(ad.image, ad.title);
+
   return (
-    <div className="h-48 overflow-hidden bg-gray-100 relative">
+    <div className="h-52 rounded-lg overflow-hidden bg-white shadow hover:shadow-lg transition-shadow duration-300 relative group">
       <img
-        src={ad.image}
-        alt={ad.title}
-        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+        {...imageProps}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
       />
-      {/* Simple fallback overlay */}
-      <div className="absolute inset-0 bg-gray-200 opacity-0 hover:opacity-10 transition-opacity duration-300 flex items-center justify-center text-gray-500 text-sm">
-        📱 {ad.category}
+      {/* Overlay on hover */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-4 py-2 flex items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <span className="text-white text-base font-semibold drop-shadow">{ad.title}</span>
       </div>
+      {/* Category badge */}
+      <span className="absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+        {ad.category}
+      </span>
     </div>
   );
 }

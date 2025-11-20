@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const validation = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -23,35 +24,56 @@ router.post('/signup', async (req, res) => {
   try {
     const { username, email, password, full_name, phone, location } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ success: false, message: 'username, email and password are required' });
+    // Enhanced validation using middleware
+    if (!validation.validateUsername(username)) {
+      return res.status(400).json({ success: false, error: 'Username is required and must be at least 3 characters long' });
+    }
+
+    if (!validation.validateEmail(email)) {
+      return res.status(400).json({ success: false, error: 'Valid email is required' });
+    }
+
+    if (!validation.validatePassword(password)) {
+      return res.status(400).json({ success: false, error: 'Password is required and must be at least 6 characters long' });
+    }
+
+    if (!validation.validateFullName(full_name)) {
+      return res.status(400).json({ success: false, error: 'Full name must be at least 2 characters long' });
+    }
+
+    if (!validation.validatePhone(phone)) {
+      return res.status(400).json({ success: false, error: 'Invalid phone number format' });
+    }
+
+    if (!validation.validateLocation(location)) {
+      return res.status(400).json({ success: false, error: 'Location must be at least 2 characters long' });
     }
 
     // Check if JWT_SECRET is configured
     if (!process.env.JWT_SECRET) {
       console.error('JWT_SECRET not configured');
-      return res.status(500).json({ success: false, message: 'Server configuration error' });
+      return res.status(500).json({ success: false, error: 'Server configuration error' });
     }
 
     const existing = await User.findByEmail(email);
     if (existing) {
-      return res.status(409).json({ success: false, message: 'Email already registered' });
+      return res.status(409).json({ success: false, error: 'Email already registered' });
     }
 
     const saltRounds = 10;
     const password_hash = await bcrypt.hash(password, saltRounds);
 
     const createdUser = await User.create({
-      username,
-      email,
+      username: username.trim(),
+      email: email.trim(),
       password_hash,
-      full_name: full_name || null,
-      phone: phone || null,
-      location: location || null,
+      full_name: full_name ? full_name.trim() : null,
+      phone: phone ? phone.trim() : null,
+      location: location ? location.trim() : null,
     });
 
     const token = jwt.sign(
-      { userId: createdUser.id, email: createdUser.email },
+      { id: createdUser.id, email: createdUser.email },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -61,15 +83,15 @@ router.post('/signup', async (req, res) => {
     if (error && error.code === '23505') {
       // Handle duplicate key constraint
       if (error.detail && error.detail.includes('username')) {
-        return res.status(409).json({ success: false, message: 'Username already exists' });
+        return res.status(409).json({ success: false, error: 'Username already exists' });
       }
       if (error.detail && error.detail.includes('email')) {
-        return res.status(409).json({ success: false, message: 'Email already exists' });
+        return res.status(409).json({ success: false, error: 'Email already exists' });
       }
-      return res.status(409).json({ success: false, message: 'Username or email already exists' });
+      return res.status(409).json({ success: false, error: 'Username or email already exists' });
     }
     console.error('Signup error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -78,8 +100,13 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'email and password are required' });
+    // Enhanced validation using middleware
+    if (!validation.validateEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Valid email is required' });
+    }
+
+    if (!validation.validatePassword(password)) {
+      return res.status(400).json({ success: false, message: 'Password is required and must be at least 6 characters long' });
     }
 
     // Check if JWT_SECRET is configured
@@ -88,7 +115,7 @@ router.post('/login', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Server configuration error' });
     }
 
-    const user = await User.findByEmail(email);
+    const user = await User.findByEmail(email.trim());
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -109,7 +136,7 @@ router.post('/login', async (req, res) => {
     };
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { id: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
