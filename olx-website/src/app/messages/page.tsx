@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { apiClient } from '@/lib/api';
-import { getImageProps, getFirstImageUrl, getCategoryDefaultImage } from '@/lib/imageUtils';
+import { getImageProps, getFirstImageUrl } from '@/lib/imageUtils';
 
 interface Conversation {
   id: string;
@@ -53,6 +53,8 @@ export default function MessagesPage() {
   const [readReceipts, setReadReceipts] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchConversationsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingClearTimeoutRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
   // Listen for socket events
   useEffect(() => {
@@ -91,13 +93,30 @@ export default function MessagesPage() {
       fetchConversations();
     };
 
-    // Listen for typing indicator
+    // Listen for typing indicator with auto-clear after 3 seconds
     const handleUserTyping = (data: any) => {
       if (data.userId !== user?.id) {
+        // Clear any existing timeout for this user
+        const existingTimeout = typingClearTimeoutRef.current.get(data.userId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+          typingClearTimeoutRef.current.delete(data.userId);
+        }
+
         setTypingUsers(prev => {
           const newSet = new Set(prev);
           if (data.isTyping) {
             newSet.add(data.userId);
+            // Auto-clear typing indicator after 3 seconds if no update
+            const timeout = setTimeout(() => {
+              setTypingUsers(p => {
+                const cleared = new Set(p);
+                cleared.delete(data.userId);
+                return cleared;
+              });
+              typingClearTimeoutRef.current.delete(data.userId);
+            }, 3000);
+            typingClearTimeoutRef.current.set(data.userId, timeout);
           } else {
             newSet.delete(data.userId);
           }
@@ -189,6 +208,21 @@ export default function MessagesPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Cleanup all timeouts on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (fetchConversationsTimeoutRef.current) {
+        clearTimeout(fetchConversationsTimeoutRef.current);
+      }
+      // Clear all typing indicator timeouts
+      typingClearTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      typingClearTimeoutRef.current.clear();
+    };
+  }, []);
 
   const fetchConversations = async () => {
     try {
@@ -394,7 +428,7 @@ export default function MessagesPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Please login to view your messages</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please login to view your messages</h1>
           <p className="text-gray-600 mb-6">Connect with buyers and sellers securely</p>
           <Link href="/login" className="text-blue-600 hover:text-blue-700 underline">
             Login here

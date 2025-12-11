@@ -7,7 +7,6 @@ import { Bell, MessageSquare, Trash2, Check, CheckCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 export default function NotificationsPage() {
   const { isAuthenticated, loading } = useAuth();
@@ -95,7 +94,7 @@ export default function NotificationsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Please login to view notifications</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please login to view notifications</h1>
           <p className="text-gray-600 mb-6">Stay updated with messages and activity</p>
           <Link href="/login" className="text-blue-600 hover:text-blue-700 underline">
             Login here

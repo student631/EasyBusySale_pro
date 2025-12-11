@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { apiClient } from '@/lib/api';
 import { useAuth } from './AuthContext';
 import { useSocket } from './SocketContext';
@@ -35,11 +35,33 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFetchingRef = useRef(false);
 
-  const fetchNotifications = async () => {
-    if (!isAuthenticated) return;
+  // Debounced fetch to prevent excessive API calls
+  const debouncedFetchNotifications = useCallback(() => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchNotificationsInternal();
+    }, 500);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const fetchNotificationsInternal = async () => {
+    if (!isAuthenticated || isFetchingRef.current) return;
 
     try {
+      isFetchingRef.current = true;
       setLoading(true);
       const response = await apiClient.getNotifications({ limit: 50 });
       if (response.success && response.data) {
@@ -51,8 +73,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setNotifications([]);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
+
+  // Public fetch function that uses debouncing
+  const fetchNotifications = useCallback(async () => {
+    debouncedFetchNotifications();
+  }, [debouncedFetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -109,7 +137,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Fetch notifications when user authenticates
   useEffect(() => {
     if (isAuthenticated) {
-      fetchNotifications();
+      // Direct fetch on auth, not debounced
+      fetchNotificationsInternal();
     } else {
       setNotifications([]);
       setUnreadCount(0);
@@ -120,11 +149,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!socket || !isAuthenticated) return;
 
-    // Handle new notification event
+    // Handle new notification event with debouncing
     const handleNewNotification = (data: any) => {
       console.log('New notification received:', data);
-      // Fetch latest notifications to get complete data
-      fetchNotifications();
+      // Use debounced fetch to prevent excessive API calls
+      debouncedFetchNotifications();
     };
 
     socket.on('new_notification', handleNewNotification);
@@ -132,7 +161,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => {
       socket.off('new_notification', handleNewNotification);
     };
-  }, [socket, isAuthenticated]);
+  }, [socket, isAuthenticated, debouncedFetchNotifications]);
 
   return (
     <NotificationContext.Provider

@@ -1,10 +1,20 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const validation = require('../middleware/validation');
 
 const router = express.Router();
+
+// Google OAuth client - initialized lazily to ensure env vars are loaded
+let googleClient = null;
+function getGoogleClient() {
+  if (!googleClient && process.env.GOOGLE_CLIENT_ID) {
+    googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  }
+  return googleClient;
+}
 
 // Helpful GET endpoints for browser visits
 router.get('/', (req, res) => {
@@ -145,6 +155,105 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/google - Google OAuth login
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ success: false, error: 'Google credential is required' });
+    }
+
+    // Check if Google Client ID is configured
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      console.error('GOOGLE_CLIENT_ID not configured');
+      return res.status(500).json({ success: false, error: 'Google OAuth is not configured' });
+    }
+
+    // Verify the Google token
+    let ticket;
+    try {
+      const client = getGoogleClient();
+      if (!client) {
+        return res.status(500).json({ success: false, error: 'Google OAuth client not initialized' });
+      }
+      ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+    } catch (verifyError) {
+      console.error('Google token verification failed:', verifyError);
+      return res.status(401).json({ success: false, error: 'Invalid Google credential' });
+    }
+
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId, picture } = payload;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email not provided by Google' });
+    }
+
+    // Check if user exists
+    let user = await User.findByEmail(email);
+
+    if (user) {
+      // Existing user - log them in
+      console.log('Google login: existing user found:', email);
+    } else {
+      // Create new user with Google info
+      console.log('Google login: creating new user:', email);
+
+      // Generate a unique username from email
+      const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+      let username = baseUsername;
+      let counter = 1;
+
+      // Check if username exists and generate unique one
+      while (await User.findByUsername(username)) {
+        username = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      // Create user without password (Google-only account)
+      const randomPassword = require('crypto').randomBytes(32).toString('hex');
+      const password_hash = await bcrypt.hash(randomPassword, 10);
+
+      user = await User.create({
+        username: username,
+        email: email,
+        password_hash: password_hash,
+        full_name: name || null,
+        phone: null,
+        location: null,
+        google_id: googleId,
+        avatar_url: picture || null,
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    const publicUser = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      full_name: user.full_name,
+      phone: user.phone,
+      location: user.location,
+      created_at: user.created_at,
+    };
+
+    return res.json({ success: true, user: publicUser, token });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

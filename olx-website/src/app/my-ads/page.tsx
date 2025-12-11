@@ -6,9 +6,9 @@ import { apiClient } from '@/lib/api';
 import { Edit, Trash2, Eye, Plus, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getImageProps, getFirstImageUrl, getCategoryDefaultImage } from '@/lib/imageUtils';
+import { getImageProps, getFirstImageUrl } from '@/lib/imageUtils';
 
 interface Ad {
   id: string;
@@ -79,7 +79,7 @@ export default function MyAdsPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Please login to view your ads</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please login to view your ads</h1>
           <Link href="/login" className="text-blue-600 hover:text-blue-700 underline">
             Login here
           </Link>

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { getImageProps, getFirstImageUrl, getCategoryDefaultImage } from '@/lib/imageUtils';
+import { getImageProps, getFirstImageUrl } from '@/lib/imageUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -134,7 +134,7 @@ export default function FavoritesPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Heart className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Please login to view your favorites</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please login to view your favorites</h1>
           <p className="text-gray-600 mb-6">Save ads you love and access them anytime</p>
           <Link href="/login" className="text-blue-600 hover:text-blue-700 underline">
             Login here

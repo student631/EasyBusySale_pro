@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Search, Car, Smartphone, Laptop, Home, Briefcase, ShoppingBag, Heart, Users, MapPin, TrendingUp, Clock, ChevronRight, Armchair, Dumbbell, BookOpen, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -63,6 +63,8 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     const loadAds = async () => {
@@ -120,12 +122,20 @@ export default function HomePage() {
         console.log('🔄 Retrying API call in 2 seconds...');
 
         // Retry once after 2 seconds instead of showing fallback immediately
-        setTimeout(async () => {
+        // Track timeout for cleanup to prevent memory leak
+        retryTimeoutRef.current = setTimeout(async () => {
+          // Check if component is still mounted before proceeding
+          if (!isMountedRef.current) return;
+
           try {
             console.log('🔄 Retry attempt...');
             const retryResponse = await fetch('http://localhost:5000/api/ads?limit=8');
+            if (!isMountedRef.current) return; // Check again after async operation
+
             if (retryResponse.ok) {
               const retryData = await retryResponse.json();
+              if (!isMountedRef.current) return;
+
               if (retryData.success && retryData.data?.ads) {
                 const mapped: ApiAd[] = retryData.data.ads.map((ad: any) => ({
                   id: ad.id.toString(),
@@ -144,6 +154,9 @@ export default function HomePage() {
           } catch (retryError) {
             console.log('❌ Retry failed, using Texas fallback data');
           }
+
+          // Check mounted before setting fallback data
+          if (!isMountedRef.current) return;
 
           // Only show fallback after retry fails - using Texas locations
           const fallbackAds: ApiAd[] = [
@@ -248,10 +261,24 @@ export default function HomePage() {
           setError('Backend server not accessible. Showing sample data.');
         }, 2000);
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     };
+
+    // Set mounted flag
+    isMountedRef.current = true;
     loadAds();
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      isMountedRef.current = false;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
   }, []);
 
 

@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Filter, MapPin, Star, Heart, Share2, X, Menu } from 'lucide-react';
+import { Filter, MapPin, Menu } from 'lucide-react';
 import { getImageProps, getFirstImageUrl, getCategoryDefaultImage } from '@/lib/imageUtils';
-import { formatPrice, CATEGORIES, TEXAS_CITIES, CONDITION_TYPES, SORT_OPTIONS, formatLocation } from '@/lib/constants';
+import { formatPrice, CATEGORIES, TEXAS_CITIES, CONDITION_TYPES, SORT_OPTIONS } from '@/lib/constants';
 import FavoriteButton from '@/components/FavoriteButton';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -358,7 +358,7 @@ export default function SearchPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>

@@ -44,12 +44,24 @@ class User {
 
   static async findByEmail(email) {
     const query = 'SELECT * FROM users WHERE email = $1';
-    
+
     try {
       const result = await pool.query(query, [email]);
       return result.rows[0];
     } catch (error) {
       console.error('Error finding user by email:', error);
+      throw error;
+    }
+  }
+
+  static async findByUsername(username) {
+    const query = 'SELECT * FROM users WHERE username = $1';
+
+    try {
+      const result = await pool.query(query, [username]);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error finding user by username:', error);
       throw error;
     }
   }

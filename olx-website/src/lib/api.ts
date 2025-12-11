@@ -558,6 +558,25 @@ class ApiClient {
   async getStats(): Promise<ApiResponse<any>> {
     return this.request('/api/stats');
   }
+
+  // Google OAuth: authenticate with Google credential
+  async googleAuth(credential: string): Promise<ApiResponse<{ user: User; token: string }>> {
+    const response = await this.request<{ user: User; token: string }>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    });
+
+    // Auto-set token on successful Google auth
+    if (response.success) {
+      const token = (response.data as any)?.token || (response as any).token;
+      if (token) {
+        console.log('✅ [API] Setting token after Google auth');
+        this.setToken(token);
+      }
+    }
+
+    return response;
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

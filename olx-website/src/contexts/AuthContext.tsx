@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (data: { username: string; email: string; password: string; full_name?: string; phone?: string; location?: string; }) => Promise<{ success: boolean; error?: string }>;
+  googleLogin: (credential: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -106,6 +107,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const googleLogin = async (credential: string) => {
+    try {
+      console.log('🔐 [AuthContext] Starting Google login...');
+      const response = await apiClient.googleAuth(credential);
+      console.log('🔐 [AuthContext] Google login response:', response);
+
+      if (response.success) {
+        const userData = (response.data as any)?.user || (response as any).user;
+        const token = (response.data as any)?.token || (response as any).token;
+
+        if (userData && token) {
+          setUser(userData);
+          console.log('✅ [AuthContext] Google login successful');
+          return { success: true };
+        } else {
+          return { success: false, error: 'Invalid response from server' };
+        }
+      } else {
+        const errorMessage = response.error || (response as any).message || 'Google login failed';
+        return { success: false, error: errorMessage };
+      }
+    } catch (error) {
+      console.error('❌ [AuthContext] Google login error:', error);
+      return { success: false, error: 'Network error' };
+    }
+  };
+
   const logout = () => {
     apiClient.logout();
     setUser(null);
@@ -117,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     login,
     signup,
+    googleLogin,
     logout,
     isAuthenticated: !!user,
   };

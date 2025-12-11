@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Upload, X, MapPin, DollarSign, FileText, Image as ImageIcon } from 'lucide-react';
@@ -32,6 +32,19 @@ export default function PostAdPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+
+  // Track blob URLs for cleanup to prevent memory leaks
+  const blobUrlsRef = useRef<string[]>([]);
+
+  // Cleanup blob URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+      blobUrlsRef.current = [];
+    };
+  }, []);
 
   // Remove authentication check - allow anyone to access post ad form
 
@@ -96,6 +109,8 @@ export default function PostAdPage() {
     // Create preview URLs only for valid files
     const newPreviews = validFiles.map(file => {
       const url = URL.createObjectURL(file);
+      // Track blob URL for cleanup
+      blobUrlsRef.current.push(url);
       console.log(`🖼️ Created preview URL for ${file.name}:`, url);
       return url;
     });
@@ -109,6 +124,14 @@ export default function PostAdPage() {
   };
 
   const removeImage = (index: number) => {
+    // Revoke the blob URL to free memory
+    const urlToRevoke = imagePreview[index];
+    if (urlToRevoke) {
+      URL.revokeObjectURL(urlToRevoke);
+      // Remove from tracking ref
+      blobUrlsRef.current = blobUrlsRef.current.filter(url => url !== urlToRevoke);
+    }
+
     const newImages = formData.images.filter((_, i) => i !== index);
     const newPreviews = imagePreview.filter((_, i) => i !== index);
     setFormData(prev => ({ ...prev, images: newImages }));

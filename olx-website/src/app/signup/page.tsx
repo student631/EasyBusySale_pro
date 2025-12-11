@@ -241,7 +241,7 @@ export default function SignupPage() {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Create a password"
-                    className="pl-10 pr-12"
+                    className="pl-10 pr-10"
                   />
                   <button
                     type="button"
@@ -271,7 +271,7 @@ export default function SignupPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Confirm your password"
-                    className="pl-10 pr-12"
+                    className="pl-10 pr-10"
                   />
                   <button
                     type="button"
